@@ -4,8 +4,22 @@ connection_to_db = pyodbc.connect(
     r'Driver={SQL Server};Server=;Database=;Trusted_Connection=yes;')
 cursor = connection_to_db.cursor()
 
+cursor.execute(" \
+                select a.merchant_name,a.Brand_name,a.color_name,a.qu_sell \
+                ,LAST_VALUE(a.qu_sell)over(partition by a.merchant_name,a.Brand_name order by a.Brand_name,a.qu_sell rows between \
+                current row and unbounded following) as [total_a.qu_sell_12]\
+                from\
+                (select m.merchant_name,b.Brand_name,c.color_name,count(*) as qu_sell from purchases p \
+                left join phones f on p.phone_id = f.phone_id\
+                left join brands b on f.brand_id = b.brand_id\
+                left join merchants m on p.merchant_id = m.merchant_id\
+                left join colors c on p.color_id = c.color_id\
+                group by m.merchant_name,b.Brand_name,c.color_name)a\
+                order by a.merchant_name,a.Brand_name,a.qu_sell")\
+
 cursor.execute('select min(weight) as min, max(weight) as max,avg(weight) as avg,sum(weight)/count(weight) as averOfWeight'
                ', sum(weight)/count(*)as averOfWeighTwo from m_phones')
+
 cursor.execute('select brand_name, phone_name, battery_capacity/weight as phoneBatteryCapacity from m_phones')
 
 cursor.execute('select top 15 percent * from m_phones order by battery_capacity desc')
@@ -333,6 +347,7 @@ where year(s.date_purch)=2019 and b.Brand_name = 'xiaomi'\
 group by p.phone_name\
 order by tot_pr desc\
 ")
+
 
 while 1:
     row = cursor.fetchone()
