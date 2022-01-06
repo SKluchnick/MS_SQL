@@ -1,7 +1,7 @@
 import pyodbc
 
 connection_to_db = pyodbc.connect(
-    r'Driver={SQL Server};Server=DESKTOP-JP8IK62\SQLEXPRESS;Database=P_STORE;Trusted_Connection=yes;')
+    r'Driver={SQL Server};Server=;Database=;Trusted_Connection=yes;')
 cursor = connection_to_db.cursor()
 
 cursor.execute("insert into new_phone_price(phone_id,color_id,merchant_id,price)\
@@ -32,10 +32,3 @@ from new_phone_price npp  \
 join (select top 2 *from phone_price where merchant_id=2 and color_id=23 order by price)a \
 on npp.phone_id = a.phone_id and npp.merchant_id = a.merchant_id and npp.color_id = a.color_id")
 
-while 1:
-    row = cursor.fetchone()
-    if not row:
-        break
-    for i in row:
-        print(i)
-connection_to_db.close()

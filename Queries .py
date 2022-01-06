@@ -1,7 +1,7 @@
 import pyodbc
 
 connection_to_db = pyodbc.connect(
-    r'Driver={SQL Server};Server=DESKTOP-JP8IK62\SQLEXPRESS;Database=P_STORE;Trusted_Connection=yes;')
+    r'Driver={SQL Server};Server=;Database=;Trusted_Connection=yes;')
 cursor = connection_to_db.cursor()
 
 cursor.execute('select min(weight) as min, max(weight) as max,avg(weight) as avg,sum(weight)/count(weight) as averOfWeight'
