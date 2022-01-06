@@ -1,7 +1,7 @@
 import pyodbc
 
 connection_to_db = pyodbc.connect(
-    r'Driver={SQL Server};Server=DESKTOP-JP8IK62\SQLEXPRESS;Database=computer;Trusted_Connection=yes;')
+    r'Driver={SQL Server};Server=;Database=;Trusted_Connection=yes;')
 cursor = connection_to_db.cursor()
 
 cursor.execute("select p.maker,a.* from Product p\
