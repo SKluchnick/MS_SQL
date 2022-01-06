@@ -148,106 +148,127 @@ cursor = connection_to_db.cursor()
 #                 where NULLIF(main_camera,0) is not null")
 
 
-cursor.execute("select \
-                    b.brand_name \
-                    ,count(*) as q_sell \
-                    ,sum(s.price) as tot_grn \
-                from purchases s \
-                    left join phones p on s.phone_id=p.phone_id \
-                    left join brands b on p.brand_id=b.brand_id \
-                where s.phone_id=916472 and s.color_id=17 \
-                    and year(s.date_purch)=2019 \
-                    --and month(date_purch) between 10 and 12 \
-                    and datepart(qq,date_purch)=4 \
-                    and datepart(mm,date_purch)=12 \
-                    and datepart(dd,date_purch)=31 \
-                group by b.brand_name \ ")
-
-cursor.execute("select c.birth_date,count(*),datepart(qq,c.birth_date)from clients c\
-                    where year(c.birth_date)>= 1990 and  year(c.birth_date) <=1995\
-                    group by c.birth_date")
-
-
-cursor.execute("select * from purchases\
-                where date_purch >= DATETIMEFROMPARTS(2019,8,20,15,00,00,000)\
-                and date_purch <= DATETIMEFROMPARTS(2019,8,21,09,00,00,000)\
-                order by date_purch")
-
-cursor.execute("select purchases.*, clients.*\
-                ,ABS(DATEDIFF(yy,purchases.date_purch,clients.birth_date))\
-                from purchases\
-                join clients on purchases.client_id = clients.client_id\
-                where MONTH(purchases.date_purch) = MONTH(clients.birth_date) and DAY(purchases.date_purch) = DAY(clients.birth_date)")
-
-cursor.execute("select DATEADD(mm,DATEDIFF(mm,1,GETDATE()),0)\
-                , DATEADD(mm,1+DATEDIFF(mm,1,GETDATE()),0)\
-                ,datediff(dd,DATEADD(mm,DATEDIFF(mm,1,GETDATE()),0),DATEADD(mm,1+DATEDIFF(mm,1,GETDATE()),0))")
-
-cursor.execute("select p.phone_name from phones p\
-                where ISNUMERIC(SUBSTRING(p.phone_name,patindex('_%',p.phone_name ),1))=1")
-
-cursor.execute("select p.price from phone_price p\
-                where abs(p.price-6000) < 500\
-                order by p.price")
-
-cursor.execute("SELECT case\
-                when rnd >= 0 and rnd <= 0.33333 then '0'\
-                when rnd > 0.33333 and rnd <= 0.66666 then '100'\
-                when rnd >0.66666 and rnd <= 1 then '200'\
-                else '___'\
-                end as k\
-                from (select RAND() as rnd) a")
-
-cursor.execute("select price \
-                ,TRIM (FORMAT(price,'C','ua-ua')) as [FORMAT(price,'C','ua-ua')]\
-                ,TRIM (FORMAT(price / 25,'C','us-us')) as [FORMAT(price / 25,'C','us-us')]\
-                ,TRIM (STR(price,4,1)) as [STR(price,4,1)]\
-                from phone_price\
-                ")
-
-cursor.execute("\
-                select GETDATE()\
-                ,CONVERT(smalldatetime,GETDATE())\
-                ,CONVERT(date,GETDATE())\
-                ,CONVERT(time,GETDATE())\
-                ,CONVERT(datetime2,GETDATE())\
-                ,CONVERT(datetimeoffset,GETDATE())")
-
-cursor.execute("select b.brand_name,count(*) as q_sell,sum(s.price) as total_grn\
-                ,nullif (sum(case when month(s.date_purch) between 1 and 3 then s.price else 0 end),0) as first_quarter\
-                ,nullif (sum(case when month(s.date_purch) between 4 and 6 then s.price else 0 end),0) as second_quarter\
-                ,nullif (sum(case when month(s.date_purch) between 7 and 9 then s.price else 0 end),0) as third_quarter\
-                ,nullif (sum(case when month(s.date_purch) between 10 and 12 then s.price else 0 end),0) as fourth_quarter\
-                ,round (100 * nullif (sum(case when month(s.date_purch) between 4 and 6 then s.price else 0 end),0)\
-                /nullif (sum(case when month(s.date_purch) between 1 and 3 then s.price else 0 end),0)-1,2) as increase_decrease_2_to_1\
-                ,round (100 * nullif (sum(case when month(s.date_purch) between 7 and 9 then s.price else 0 end),0)\
-                /nullif (sum(case when month(s.date_purch) between 4 and 6 then s.price else 0 end),0)-1,2) as increase_decrease_3_to_2\
-                ,round (100 * nullif (sum(case when month(s.date_purch) between 10 and 12 then s.price else 0 end),0)\
-                /nullif (sum(case when month(s.date_purch) between 7 and 9 then s.price else 0 end),0)-1,2) as increase_decrease_4_to_3\
-                from purchases s left join phones p on s.phone_id=p.phone_id\
-                left join brands b on p.brand_id=b.brand_id\
-                where year(s.date_purch)=2019\
-                group by b.brand_name")
-
-cursor.execute("select * \
-                ,(case when b.five < 0.8 then 'a'\
-                when b.five < 0.95 then 'b'\
-                else 'c'\
-                end) as tab\
-                from(select * \
-                ,sum(a.four) over(order by a.four desc  rows between unbounded preceding and current row) five\
-                from(select distinct t3.Brand_name\
-                ,sum(t1.price) over(partition by t3.Brand_name) one\
-                ,count(t1.price) over(partition by t3.Brand_name) two\
-                ,sum(t1.price) over() three\
-                ,sum(t1.price) over(partition by t3.Brand_name)/sum(t1.price) over() four\
-                from purchases t1\
-                left join phones t2 on t1.phone_id = t2.phone_id\
-                left join brands t3 on t2.brand_id = t3.brand_id\
-                where year(t1.date_purch)=2019 and month(t1.date_purch) between 1 and 3)a\
-                )b")
-
-
+# cursor.execute("select \
+#                     b.brand_name \
+#                     ,count(*) as q_sell \
+#                     ,sum(s.price) as tot_grn \
+#                 from purchases s \
+#                     left join phones p on s.phone_id=p.phone_id \
+#                     left join brands b on p.brand_id=b.brand_id \
+#                 where s.phone_id=916472 and s.color_id=17 \
+#                     and year(s.date_purch)=2019 \
+#                     --and month(date_purch) between 10 and 12 \
+#                     and datepart(qq,date_purch)=4 \
+#                     and datepart(mm,date_purch)=12 \
+#                     and datepart(dd,date_purch)=31 \
+#                 group by b.brand_name \ ")
+#
+# cursor.execute("select c.birth_date,count(*),datepart(qq,c.birth_date)from clients c\
+#                     where year(c.birth_date)>= 1990 and  year(c.birth_date) <=1995\
+#                     group by c.birth_date")
+#
+#
+# cursor.execute("select * from purchases\
+#                 where date_purch >= DATETIMEFROMPARTS(2019,8,20,15,00,00,000)\
+#                 and date_purch <= DATETIMEFROMPARTS(2019,8,21,09,00,00,000)\
+#                 order by date_purch")
+#
+# cursor.execute("select purchases.*, clients.*\
+#                 ,ABS(DATEDIFF(yy,purchases.date_purch,clients.birth_date))\
+#                 from purchases\
+#                 join clients on purchases.client_id = clients.client_id\
+#                 where MONTH(purchases.date_purch) = MONTH(clients.birth_date) and DAY(purchases.date_purch) = DAY(clients.birth_date)")
+#
+# cursor.execute("select DATEADD(mm,DATEDIFF(mm,1,GETDATE()),0)\
+#                 , DATEADD(mm,1+DATEDIFF(mm,1,GETDATE()),0)\
+#                 ,datediff(dd,DATEADD(mm,DATEDIFF(mm,1,GETDATE()),0),DATEADD(mm,1+DATEDIFF(mm,1,GETDATE()),0))")
+#
+# cursor.execute("select p.phone_name from phones p\
+#                 where ISNUMERIC(SUBSTRING(p.phone_name,patindex('_%',p.phone_name ),1))=1")
+#
+# cursor.execute("select p.price from phone_price p\
+#                 where abs(p.price-6000) < 500\
+#                 order by p.price")
+#
+# cursor.execute("SELECT case\
+#                 when rnd >= 0 and rnd <= 0.33333 then '0'\
+#                 when rnd > 0.33333 and rnd <= 0.66666 then '100'\
+#                 when rnd >0.66666 and rnd <= 1 then '200'\
+#                 else '___'\
+#                 end as k\
+#                 from (select RAND() as rnd) a")
+#
+# cursor.execute("select price \
+#                 ,TRIM (FORMAT(price,'C','ua-ua')) as [FORMAT(price,'C','ua-ua')]\
+#                 ,TRIM (FORMAT(price / 25,'C','us-us')) as [FORMAT(price / 25,'C','us-us')]\
+#                 ,TRIM (STR(price,4,1)) as [STR(price,4,1)]\
+#                 from phone_price\
+#                 ")
+#
+# cursor.execute("\
+#                 select GETDATE()\
+#                 ,CONVERT(smalldatetime,GETDATE())\
+#                 ,CONVERT(date,GETDATE())\
+#                 ,CONVERT(time,GETDATE())\
+#                 ,CONVERT(datetime2,GETDATE())\
+#                 ,CONVERT(datetimeoffset,GETDATE())")
+#
+# cursor.execute("select b.brand_name,count(*) as q_sell,sum(s.price) as total_grn\
+#                 ,nullif (sum(case when month(s.date_purch) between 1 and 3 then s.price else 0 end),0) as first_quarter\
+#                 ,nullif (sum(case when month(s.date_purch) between 4 and 6 then s.price else 0 end),0) as second_quarter\
+#                 ,nullif (sum(case when month(s.date_purch) between 7 and 9 then s.price else 0 end),0) as third_quarter\
+#                 ,nullif (sum(case when month(s.date_purch) between 10 and 12 then s.price else 0 end),0) as fourth_quarter\
+#                 ,round (100 * nullif (sum(case when month(s.date_purch) between 4 and 6 then s.price else 0 end),0)\
+#                 /nullif (sum(case when month(s.date_purch) between 1 and 3 then s.price else 0 end),0)-1,2) as increase_decrease_2_to_1\
+#                 ,round (100 * nullif (sum(case when month(s.date_purch) between 7 and 9 then s.price else 0 end),0)\
+#                 /nullif (sum(case when month(s.date_purch) between 4 and 6 then s.price else 0 end),0)-1,2) as increase_decrease_3_to_2\
+#                 ,round (100 * nullif (sum(case when month(s.date_purch) between 10 and 12 then s.price else 0 end),0)\
+#                 /nullif (sum(case when month(s.date_purch) between 7 and 9 then s.price else 0 end),0)-1,2) as increase_decrease_4_to_3\
+#                 from purchases s left join phones p on s.phone_id=p.phone_id\
+#                 left join brands b on p.brand_id=b.brand_id\
+#                 where year(s.date_purch)=2019\
+#                 group by b.brand_name")
+#
+# cursor.execute("select * \
+#                 ,(case when b.five < 0.8 then 'a'\
+#                 when b.five < 0.95 then 'b'\
+#                 else 'c'\
+#                 end) as tab\
+#                 from(select * \
+#                 ,sum(a.four) over(order by a.four desc  rows between unbounded preceding and current row) five\
+#                 from(select distinct t3.Brand_name\
+#                 ,sum(t1.price) over(partition by t3.Brand_name) one\
+#                 ,count(t1.price) over(partition by t3.Brand_name) two\
+#                 ,sum(t1.price) over() three\
+#                 ,sum(t1.price) over(partition by t3.Brand_name)/sum(t1.price) over() four\
+#                 from purchases t1\
+#                 left join phones t2 on t1.phone_id = t2.phone_id\
+#                 left join brands t3 on t2.brand_id = t3.brand_id\
+#                 where year(t1.date_purch)=2019 and month(t1.date_purch) between 1 and 3)a\
+#                 )b")
+#
+# cursor.execute("select\
+#                     a.merchant_name\
+#                     ,count(a.phone_id) q_t\
+#                     ,sum(a.tot_pr) as tot_pr\
+#                     ,sum(a.q_s) as q_s\
+#                     ,sum(a.tot_pr)/sum(a.q_s) as avg_ch\
+#                 from (\
+#                         select\
+#                             m.merchant_name\
+#                             ,s.phone_id\
+#                             ,sum(s.price) as tot_pr\
+#                             ,count(*) as q_s\
+#                         from purchases s\
+#                         left join merchants m on s.merchant_id=m.merchant_id\
+#                         where year(s.date_purch)=2019 and month(s.date_purch) between 1 and 6\
+#                         group by\
+#                             m.merchant_name\
+#                             ,s.phone_id\
+#                     ) a\
+#                 group by a.merchant_name\
+#                 order by q_t desc\
+#                 ")
 
 while 1:
     row = cursor.fetchone()
