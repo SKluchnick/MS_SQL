@@ -32,7 +32,7 @@ cursor.execute("update pp set pp.price = pp.price +10 \
 cursor.commit()
 
 cursor.execute("delete from  npp \
-from new_phone_price npp  \
-join (select top 2 *from phone_price where merchant_id=2 and color_id=23 order by price)a \
-on npp.phone_id = a.phone_id and npp.merchant_id = a.merchant_id and npp.color_id = a.color_id")
+                from new_phone_price npp  \
+                join (select top 2 *from phone_price where merchant_id=2 and color_id=23 order by price)a \
+                on npp.phone_id = a.phone_id and npp.merchant_id = a.merchant_id and npp.color_id = a.color_id")
 cursor.commit()
