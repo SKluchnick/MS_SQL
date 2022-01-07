@@ -25,10 +25,10 @@ cursor.execute("select from new_phone_price npp join phones p on npp.phone_id=p.
 cursor.commit()
 
 cursor.execute("update pp set pp.price = pp.price +10 \
-from new_phone_price pp \
-where exists (select * from stock s where s.amount = 1 and pp.phone_id = s.phone_id \
-and pp.color_id = s.color_id and pp.merchant_id = s.merchant_id) \
-")
+                from new_phone_price pp \
+                where exists (select * from stock s where s.amount = 1 and pp.phone_id = s.phone_id \
+                and pp.color_id = s.color_id and pp.merchant_id = s.merchant_id) \
+                ")
 cursor.commit()
 
 cursor.execute("delete from  npp \

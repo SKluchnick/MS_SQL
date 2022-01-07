@@ -4,19 +4,6 @@ connection_to_db = pyodbc.connect(
     r'Driver={SQL Server};Server=;Database=;Trusted_Connection=yes;')
 cursor = connection_to_db.cursor()
 
-cursor.execute(" \
-                select a.merchant_name,a.Brand_name,a.color_name,a.qu_sell \
-                ,LAST_VALUE(a.qu_sell)over(partition by a.merchant_name,a.Brand_name order by a.Brand_name,a.qu_sell rows between \
-                current row and unbounded following) as [total_a.qu_sell_12]\
-                from\
-                (select m.merchant_name,b.Brand_name,c.color_name,count(*) as qu_sell from purchases p \
-                left join phones f on p.phone_id = f.phone_id\
-                left join brands b on f.brand_id = b.brand_id\
-                left join merchants m on p.merchant_id = m.merchant_id\
-                left join colors c on p.color_id = c.color_id\
-                group by m.merchant_name,b.Brand_name,c.color_name)a\
-                order by a.merchant_name,a.Brand_name,a.qu_sell")\
-
 cursor.execute('select min(weight) as min, max(weight) as max,avg(weight) as avg,sum(weight)/count(weight) as averOfWeight'
                ', sum(weight)/count(*)as averOfWeighTwo from m_phones')
 
@@ -62,13 +49,6 @@ cursor.execute('select cl.client_name as clientName \
                 having avg(purchases.price) > 3000 and count(purchases.date_purch)>= 2)  ')
 
 
-
-cursor.execute('select brand_name, phone_name, memory, price, \
-                count(phone_name)over(partition by memory) as quantityPhonesWithMemory,\
-                avg(price)over(partition by memory) as quantityPhonesWithPrice \
-                from m_phones where brand_name in (?)',('apple'))
-
-
 cursor.execute('select brand_name, brand_id , color_name, color_id from brands,colors where reg_country in (?)',('Украина'))
 
 
@@ -78,25 +58,6 @@ cursor.execute("select iif(grouping(brand_name)=1,'итого',brand_name) ,iif(
                 where brand_name in('huawei','xiaomi') and ram in (4,8) \
                 group by brand_name, battery_type,ram with rollup \
                 order by brand_name, battery_type,ram ")
-
-cursor.execute("select brand_name, phone_name,memory,price,\
-                row_number() over(order by memory, price) as rowNumberMemoryPrice,\
-                row_number() over(order by price desc) as rowNumberPriceDesc\
-                from m_phones\
-                where brand_name in ('samsung') and price is not null\
-                order by memory, price")
-
-
-cursor.execute("select pp.price,m.merchant_name,b.Brand_name,p.phone_name\
-                ,row_number() over( order by merchant_name, brand_name , phone_name) as [row_number_table]\
-                ,row_number() over(partition by merchant_name order by merchant_name, brand_name , phone_name) as [row_number_merchant_name]\
-                ,row_number() over(partition by merchant_name, brand_name order by merchant_name, brand_name , phone_name) as [row_number_merchant_name_brand_name]\
-                ,row_number() over(partition by  brand_name order by merchant_name, brand_name , phone_name) as [row_number_merchant_name_brand_name]\
-                from phone_price pp \
-                left join merchants m on pp.merchant_id = m.merchant_id\
-                left join phones p on pp.phone_id = p.phone_id\
-                left join brands b on p.brand_id = b.brand_id\
-                order by m.merchant_name, b.brand_name, p.phone_name")
 
 cursor.execute("select os  ,CHARINDEX('.',os) as [CHARINDEX '.']\
                 ,CHARINDEX('v',os) as [CHARINDEX 'v']\
@@ -262,91 +223,91 @@ cursor.execute("select * \
                 )b")
 
 cursor.execute("select ab.phone_name\
-,ab.[total phone]\
-,ab.[sum(price)]\
-,ab.share\
-,ab.[нарастающий итог] \
-,case\
-when ab.[нарастающий итог] <= 0.8 then 'A' \
-when ab.[нарастающий итог] >= 0.8 and ab.[нарастающий итог] <=0.95 then 'B' \
-else 'C' end as top_rate\
-from(\
-select a.phone_name\
-,a.[total phone]\
-,b.[sum(price)] \
-,a.[total phone]/b.[sum(price)]   as share\
-,sum(a.[total phone]/b.[sum(price)]) over(order by a.[total phone]/b.[sum(price)] desc) as [нарастающий итог]\
-from\
-(\
-select p.phone_name,sum(s.price) as [total phone]\
-from purchases s\
-left join phones p on s.phone_id = p.phone_id\
-left join brands b on p.brand_id = b.brand_id\
-where YEAR(s.date_purch) =2019 and month(s.date_purch) between 1 and 3\
-group by p.phone_name )a\
-,(select sum(price) as [sum(price)] from purchases where YEAR(date_purch) =2019 and month(date_purch) between 1 and 3)b\
---order by share desc\
-)ab\
-order by top_rate\
-")
+                ,ab.[total phone]\
+                ,ab.[sum(price)]\
+                ,ab.share\
+                ,ab.[нарастающий итог] \
+                ,case\
+                when ab.[нарастающий итог] <= 0.8 then 'A' \
+                when ab.[нарастающий итог] >= 0.8 and ab.[нарастающий итог] <=0.95 then 'B' \
+                else 'C' end as top_rate\
+                from(\
+                select a.phone_name\
+                ,a.[total phone]\
+                ,b.[sum(price)] \
+                ,a.[total phone]/b.[sum(price)]   as share\
+                ,sum(a.[total phone]/b.[sum(price)]) over(order by a.[total phone]/b.[sum(price)] desc) as [нарастающий итог]\
+                from\
+                (\
+                select p.phone_name,sum(s.price) as [total phone]\
+                from purchases s\
+                left join phones p on s.phone_id = p.phone_id\
+                left join brands b on p.brand_id = b.brand_id\
+                where YEAR(s.date_purch) =2019 and month(s.date_purch) between 1 and 3\
+                group by p.phone_name )a\
+                ,(select sum(price) as [sum(price)] from purchases where YEAR(date_purch) =2019 and month(date_purch) between 1 and 3)b\
+                --order by share desc\
+                )ab\
+                order by top_rate\
+                ")
 
 cursor.execute("select a.phone_name,a.m01,a.m02,a.m03,a.m04,a.m05,a.m06,a.total_avg\
-,sqrt((square(m01-total_avg)+square(m02-total_avg)+square(m03-total_avg)+square(m04-total_avg)+square(m05-total_avg)+square(m06-total_avg))/6)/total_avg as k_xyz\
-,case\
-when sqrt((square(m01-total_avg)+square(m02-total_avg)+square(m03-total_avg)+square(m04-total_avg)+square(m05-total_avg)+square(m06-total_avg))/6)/total_avg<=0.1 then 'X'\
-when sqrt((square(m01-total_avg)+square(m02-total_avg)+square(m03-total_avg)+square(m04-total_avg)+square(m05-total_avg)+square(m06-total_avg))/6)/total_avg<=0.25 then 'Y'\
-else 'Z' end as kat\
-from (\
-select p.phone_name\
-,sum(case when month(date_purch)=1 then 1 else 0 end) as m01\
-,sum(case when month(date_purch)=2 then 1 else 0 end) as m02\
-,sum(case when month(date_purch)=3 then 1 else 0 end) as m03\
-,sum(case when month(date_purch)=4 then 1 else 0 end) as m04\
-,sum(case when month(date_purch)=5 then 1 else 0 end) as m05\
-,sum(case when month(date_purch)=6 then 1 else 0 end) as m06\
-,count(*)/6 as total_avg\
-from purchases s left join phones p on s.phone_id=p.phone_id left join brands b on p.brand_id=b.brand_id\
-where year(s.date_purch)=2019 and month(s.date_purch) between 1 and 6 and b.Brand_name = 'samsung'\
-group by p.phone_name\
-having count(*)/6<>0\
-) a\
-order by kat")
+                ,sqrt((square(m01-total_avg)+square(m02-total_avg)+square(m03-total_avg)+square(m04-total_avg)+square(m05-total_avg)+square(m06-total_avg))/6)/total_avg as k_xyz\
+                ,case\
+                when sqrt((square(m01-total_avg)+square(m02-total_avg)+square(m03-total_avg)+square(m04-total_avg)+square(m05-total_avg)+square(m06-total_avg))/6)/total_avg<=0.1 then 'X'\
+                when sqrt((square(m01-total_avg)+square(m02-total_avg)+square(m03-total_avg)+square(m04-total_avg)+square(m05-total_avg)+square(m06-total_avg))/6)/total_avg<=0.25 then 'Y'\
+                else 'Z' end as kat\
+                from (\
+                select p.phone_name\
+                ,sum(case when month(date_purch)=1 then 1 else 0 end) as m01\
+                ,sum(case when month(date_purch)=2 then 1 else 0 end) as m02\
+                ,sum(case when month(date_purch)=3 then 1 else 0 end) as m03\
+                ,sum(case when month(date_purch)=4 then 1 else 0 end) as m04\
+                ,sum(case when month(date_purch)=5 then 1 else 0 end) as m05\
+                ,sum(case when month(date_purch)=6 then 1 else 0 end) as m06\
+                ,count(*)/6 as total_avg\
+                from purchases s left join phones p on s.phone_id=p.phone_id left join brands b on p.brand_id=b.brand_id\
+                where year(s.date_purch)=2019 and month(s.date_purch) between 1 and 6 and b.Brand_name = 'samsung'\
+                group by p.phone_name\
+                having count(*)/6<>0\
+                ) a\
+                order by kat")
 
 cursor.execute("select a.Brand_name\
-,count(a.phone_name) as [count(a.phone_name)]\
-,sum (a.[total sum brand]) as [(sum a.total sum brand)]\
-,sum (a.[total count]) as [(a.total count)]\
-,sum (a.[total sum brand])/sum (a.[total count])\
-from(\
-select b.Brand_name,p.phone_name,sum(s.price) as [total sum brand],count(*) as [total count]\
-from purchases s\
-left join phones p on s.phone_id = p.phone_id\
-left join brands b on p.brand_id = b.brand_id\
-where YEAR(s.date_purch) =2019 and month(s.date_purch) between 1 and 6\
-group by b.Brand_name,p.phone_name)a\
-group by a.Brand_name\
-order by [count(a.phone_name)] desc")
+                ,count(a.phone_name) as [count(a.phone_name)]\
+                ,sum (a.[total sum brand]) as [(sum a.total sum brand)]\
+                ,sum (a.[total count]) as [(a.total count)]\
+                ,sum (a.[total sum brand])/sum (a.[total count])\
+                from(\
+                select b.Brand_name,p.phone_name,sum(s.price) as [total sum brand],count(*) as [total count]\
+                from purchases s\
+                left join phones p on s.phone_id = p.phone_id\
+                left join brands b on p.brand_id = b.brand_id\
+                where YEAR(s.date_purch) =2019 and month(s.date_purch) between 1 and 6\
+                group by b.Brand_name,p.phone_name)a\
+                group by a.Brand_name\
+                order by [count(a.phone_name)] desc")
 
 cursor.execute("select p.phone_name,sum(s.price) as tot_pr\
-,sum(iif(month(s.date_purch)=1,s.price,0)) as m01\
-,sum(iif(month(s.date_purch)=2,s.price,0)) as m02\
-,sum(iif(month(s.date_purch)=3,s.price,0)) as m03\
-,sum(iif(month(s.date_purch)=4,s.price,0)) as m04\
-,sum(iif(month(s.date_purch)=5,s.price,0)) as m05\
-,sum(iif(month(s.date_purch)=6,s.price,0)) as m06\
-,sum(iif(month(s.date_purch)=7,s.price,0)) as m07\
-,sum(iif(month(s.date_purch)=8,s.price,0)) as m08\
-,sum(iif(month(s.date_purch)=9,s.price,0)) as m09\
-,sum(iif(month(s.date_purch)=10,s.price,0)) as m10\
-,sum(iif(month(s.date_purch)=11,s.price,0)) as m11\
-,sum(iif(month(s.date_purch)=12,s.price,0)) as m12\
-from purchases s \
-left join phones p  on s.phone_id = p.phone_id\
-left join brands b on p.brand_id = b.brand_id\
-where year(s.date_purch)=2019 and b.Brand_name = 'xiaomi'\
-group by p.phone_name\
-order by tot_pr desc\
-")
+                ,sum(iif(month(s.date_purch)=1,s.price,0)) as m01\
+                ,sum(iif(month(s.date_purch)=2,s.price,0)) as m02\
+                ,sum(iif(month(s.date_purch)=3,s.price,0)) as m03\
+                ,sum(iif(month(s.date_purch)=4,s.price,0)) as m04\
+                ,sum(iif(month(s.date_purch)=5,s.price,0)) as m05\
+                ,sum(iif(month(s.date_purch)=6,s.price,0)) as m06\
+                ,sum(iif(month(s.date_purch)=7,s.price,0)) as m07\
+                ,sum(iif(month(s.date_purch)=8,s.price,0)) as m08\
+                ,sum(iif(month(s.date_purch)=9,s.price,0)) as m09\
+                ,sum(iif(month(s.date_purch)=10,s.price,0)) as m10\
+                ,sum(iif(month(s.date_purch)=11,s.price,0)) as m11\
+                ,sum(iif(month(s.date_purch)=12,s.price,0)) as m12\
+                from purchases s \
+                left join phones p  on s.phone_id = p.phone_id\
+                left join brands b on p.brand_id = b.brand_id\
+                where year(s.date_purch)=2019 and b.Brand_name = 'xiaomi'\
+                group by p.phone_name\
+                order by tot_pr desc\
+                ")
 
 
 while 1:
