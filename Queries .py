@@ -204,52 +204,8 @@ cursor.execute("select b.brand_name,count(*) as q_sell,sum(s.price) as total_grn
                 where year(s.date_purch)=2019\
                 group by b.brand_name")
 
-cursor.execute("select * \
-                ,(case when b.five < 0.8 then 'a'\
-                when b.five < 0.95 then 'b'\
-                else 'c'\
-                end) as tab\
-                from(select * \
-                ,sum(a.four) over(order by a.four desc  rows between unbounded preceding and current row) five\
-                from(select distinct t3.Brand_name\
-                ,sum(t1.price) over(partition by t3.Brand_name) one\
-                ,count(t1.price) over(partition by t3.Brand_name) two\
-                ,sum(t1.price) over() three\
-                ,sum(t1.price) over(partition by t3.Brand_name)/sum(t1.price) over() four\
-                from purchases t1\
-                left join phones t2 on t1.phone_id = t2.phone_id\
-                left join brands t3 on t2.brand_id = t3.brand_id\
-                where year(t1.date_purch)=2019 and month(t1.date_purch) between 1 and 3)a\
-                )b")
 
-cursor.execute("select ab.phone_name\
-                ,ab.[total phone]\
-                ,ab.[sum(price)]\
-                ,ab.share\
-                ,ab.[нарастающий итог] \
-                ,case\
-                when ab.[нарастающий итог] <= 0.8 then 'A' \
-                when ab.[нарастающий итог] >= 0.8 and ab.[нарастающий итог] <=0.95 then 'B' \
-                else 'C' end as top_rate\
-                from(\
-                select a.phone_name\
-                ,a.[total phone]\
-                ,b.[sum(price)] \
-                ,a.[total phone]/b.[sum(price)]   as share\
-                ,sum(a.[total phone]/b.[sum(price)]) over(order by a.[total phone]/b.[sum(price)] desc) as [нарастающий итог]\
-                from\
-                (\
-                select p.phone_name,sum(s.price) as [total phone]\
-                from purchases s\
-                left join phones p on s.phone_id = p.phone_id\
-                left join brands b on p.brand_id = b.brand_id\
-                where YEAR(s.date_purch) =2019 and month(s.date_purch) between 1 and 3\
-                group by p.phone_name )a\
-                ,(select sum(price) as [sum(price)] from purchases where YEAR(date_purch) =2019 and month(date_purch) between 1 and 3)b\
-                --order by share desc\
-                )ab\
-                order by top_rate\
-                ")
+
 
 cursor.execute("select a.phone_name,a.m01,a.m02,a.m03,a.m04,a.m05,a.m06,a.total_avg\
                 ,sqrt((square(m01-total_avg)+square(m02-total_avg)+square(m03-total_avg)+square(m04-total_avg)+square(m05-total_avg)+square(m06-total_avg))/6)/total_avg as k_xyz\

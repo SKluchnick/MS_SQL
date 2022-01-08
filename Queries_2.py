@@ -27,6 +27,29 @@ cursor.execute("select *\
                 join  Product P1 on L2.model=P1.model \
                 where maker = (select maker from Product P2 where P2.model= L1.model)) X;")
 
+cursor.execute("select point, date, out,\
+                (select SUM(out) \
+                from Outcome_o \
+                where point = o.point and date <= o.date) run_tot \
+                from Outcome_o o\
+                where point = 2\
+                order BY point, date;")
+
+cursor.execute("Select max_sum, type, date, point \
+                from (\
+                select max(inc) over() AS max_sum, *\
+                from (\
+                select inc, 'inc' type, date, point FROM Income \
+                union all \
+                select inc, 'inc' type, date, point FROM Income_o \
+                union all \
+                select out, 'out' type, date, point FROM Outcome_o \
+                union all \
+                select out, 'out' type, date, point FROM Outcome \
+                ) X \
+                ) Y\
+                where inc = max_sum;")
+
 
 
 while 1:

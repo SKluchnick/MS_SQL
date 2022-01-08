@@ -74,30 +74,57 @@ cursor.execute("select brand_name, phone_name,memory,price,\
                 where brand_name in ('samsung') and price is not null\
                 order by memory, price")
 
+cursor.execute("select * \
+                ,(case when b.five < 0.8 then 'a'\
+                when b.five < 0.95 then 'b'\
+                else 'c'\
+                end) as tab\
+                from(select * \
+                ,sum(a.four) over(order by a.four desc  rows between unbounded preceding and current row) five\
+                from(select distinct t3.Brand_name\
+                ,sum(t1.price) over(partition by t3.Brand_name) one\
+                ,count(t1.price) over(partition by t3.Brand_name) two\
+                ,sum(t1.price) over() three\
+                ,sum(t1.price) over(partition by t3.Brand_name)/sum(t1.price) over() four\
+                from purchases t1\
+                left join phones t2 on t1.phone_id = t2.phone_id\
+                left join brands t3 on t2.brand_id = t3.brand_id\
+                where year(t1.date_purch)=2019 and month(t1.date_purch) between 1 and 3)a\
+                )b")
+
+cursor.execute("select ab.phone_name\
+                ,ab.[total phone]\
+                ,ab.[sum(price)]\
+                ,ab.share\
+                ,ab.[нарастающий итог] \
+                ,case\
+                when ab.[нарастающий итог] <= 0.8 then 'A' \
+                when ab.[нарастающий итог] >= 0.8 and ab.[нарастающий итог] <=0.95 then 'B' \
+                else 'C' end as top_rate\
+                from(\
+                select a.phone_name\
+                ,a.[total phone]\
+                ,b.[sum(price)] \
+                ,a.[total phone]/b.[sum(price)]   as share\
+                ,sum(a.[total phone]/b.[sum(price)]) over(order by a.[total phone]/b.[sum(price)] desc) as [нарастающий итог]\
+                from\
+                (\
+                select p.phone_name,sum(s.price) as [total phone]\
+                from purchases s\
+                left join phones p on s.phone_id = p.phone_id\
+                left join brands b on p.brand_id = b.brand_id\
+                where YEAR(s.date_purch) =2019 and month(s.date_purch) between 1 and 3\
+                group by p.phone_name )a\
+                ,(select sum(price) as [sum(price)] from purchases where YEAR(date_purch) =2019 and month(date_purch) between 1 and 3)b\
+                --order by share desc\
+                )ab\
+                order by top_rate\
+                ")
 
 
-cursor.execute("select point, date, out,\
-                (select SUM(out) \
-                from Outcome_o \
-                where point = o.point and date <= o.date) run_tot \
-                from Outcome_o o\
-                where point = 2\
-                order BY point, date;")
 
-cursor.execute("Select max_sum, type, date, point \
-                from (\
-                select max(inc) over() AS max_sum, *\
-                from (\
-                select inc, 'inc' type, date, point FROM Income \
-                union all \
-                select inc, 'inc' type, date, point FROM Income_o \
-                union all \
-                select out, 'out' type, date, point FROM Outcome_o \
-                union all \
-                select out, 'out' type, date, point FROM Outcome \
-                ) X \
-                ) Y\
-                where inc = max_sum;")
+
+
 
 
 while 1:
