@@ -1,7 +1,7 @@
 import pyodbc
 
 connection_to_db = pyodbc.connect(
-    r'Driver={SQL Server};Server=DESKTOP-JP8IK62\SQLEXPRESS;Database=P_STORE;Trusted_Connection=yes;')
+    r'Driver={SQL Server};Server=;Database=;Trusted_Connection=yes;')
 cursor = connection_to_db.cursor()
 
 cursor.execute("create table result_table(phone_id int, numOfSell int )")
