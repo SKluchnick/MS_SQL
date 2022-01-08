@@ -55,5 +55,5 @@ while 1:
 connection_to_db.close()
 
 cursor.execute("drop table result_table")
-
+cursor.commit()
 
