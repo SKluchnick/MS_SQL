@@ -29,6 +29,6 @@ class DBConnectorSecond:
 
 
 db = DBConnectorSecond(
-    r'Driver={SQL Server};Server=DESKTOP-JP8IK62\SQLEXPRESS;Database=computer;Trusted_Connection=yes;')
+    r'Driver={SQL Server};Server=;Database=;Trusted_Connection=yes;')
 res = db.select('PCf', 'model', 1232)
 print(res)
